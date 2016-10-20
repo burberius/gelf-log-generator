@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="INFO">
+<Configuration status="info">
+	<Properties>
+		<Property name="gelf.server">localhost</Property>
+		<Property name="gelf.port">12201</Property>
+		<Property name="gelf.protocol">TCP</Property>
+	</Properties>
+
 	<Appenders>
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
@@ -13,13 +19,27 @@
 				<TimeBasedTriggeringPolicy />
 				<SizeBasedTriggeringPolicy size="250 MB" />
 			</Policies>
-			<DefaultRolloverStrategy max="5"/>
+			<DefaultRolloverStrategy max="5" />
 		</RollingFile>
+		<GELF name="Gelf" server="${sys:gelf.server}" port="${sys:gelf.port}"
+			protocol="${sys:gelf.protocol}">
+			<PatternLayout pattern="%msg%n" />
+			<!-- Additional fields -->
+			<KeyValuePair key="project" value="gelf-log-generator" />
+			<KeyValuePair key="jvm" value="${java:vm}" />
+		</GELF>
 	</Appenders>
+	
 	<Loggers>
-		<Root level="info">
+		<Logger name="net.troja" level="info" additivity="false">
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="File" />
+			<AppenderRef ref="Gelf" />
+		</Logger>
+		<Root level="warn">
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="File" />
+			<AppenderRef ref="Gelf" />
 		</Root>
 	</Loggers>
 </Configuration>
