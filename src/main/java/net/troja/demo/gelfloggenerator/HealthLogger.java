@@ -11,6 +11,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -41,11 +42,17 @@ public class HealthLogger {
     @Scheduled(fixedRate = 60000)
     public void logHealth() {
         if (LOGGER.isInfoEnabled()) {
-            final StringBuilder builder = new StringBuilder();
-            builder.append("Health state: CPU ").append(getProcessCpuLoad()).append(" Load ").append(mxBean.getSystemLoadAverage());
-            builder.append(" Free Mem ").append(runtime.freeMemory()).append(" Max Mem ").append(runtime.maxMemory());
-            builder.append(" Total Mem ").append(runtime.totalMemory());
-            LOGGER.info(builder.toString());
+            final int memFree = (int) Math.floor(runtime.freeMemory() / 1024 / 1024);
+            final int memMax = (int) Math.floor(runtime.maxMemory() / 1024 / 1024);
+            final int memTotal = (int) Math.floor(runtime.totalMemory() / 1024 / 1024);
+
+            try (final CloseableThreadContext.Instance ctc = CloseableThreadContext.put("mem-free", Integer.toString(memFree))
+                    .put("mem-max", Integer.toString(memMax))
+                    .put("mem-total", Integer.toString(memTotal))) {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("Health state: CPU ").append(getProcessCpuLoad()).append(" Load ").append(mxBean.getSystemLoadAverage());
+                LOGGER.info(builder.toString());
+            }
         }
     }
 

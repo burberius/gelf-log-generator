@@ -3,6 +3,7 @@ package net.troja.demo.gelfloggenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -12,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,11 +31,17 @@ public class RandomNewsPoster {
 
     private final List<String> news = new ArrayList<>();
     private final Random rand = new Random(System.currentTimeMillis());
+    private final Calendar calendar = Calendar.getInstance();
 
     @Scheduled(fixedRate = 6000)
     public void post() {
-        if (!news.isEmpty() && (rand.nextInt(10) == 0)) {
-            LOGGER.info(news.get(rand.nextInt(news.size())));
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        if (!news.isEmpty() && (rand.nextInt(100) < (2 + (2 * calendar.get(Calendar.HOUR))))) {
+            final String entry = news.get(rand.nextInt(news.size()));
+            final String name = entry.replaceAll(".*\\((.*)\\)", "$1");
+            try (final CloseableThreadContext.Instance ctc = CloseableThreadContext.put("uuid", name)) {
+                LOGGER.info(news.get(rand.nextInt(news.size())));
+            }
         }
     }
 
